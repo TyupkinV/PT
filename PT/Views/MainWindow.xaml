@@ -1,0 +1,44 @@
+﻿<Window x:Class="PT.Views.MainWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+        xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+        xmlns:local="clr-namespace:PT"
+        mc:Ignorable="d"
+        Title="Поиск путей" Height="320" Width="400">
+    <Window.Resources>
+            <Style TargetType="Button">
+                <Setter Property="Width" Value="100"/>
+                <Setter Property="Height" Value="20"/>
+                <Setter Property="Margin" Value="3"/>
+            </Style>
+            <Style TargetType="TextBox">
+                <Setter Property="Margin" Value="5 0 5 0"/>
+            </Style>
+        </Window.Resources>
+    <Grid>
+        <Grid.RowDefinitions>
+            <RowDefinition Height="*"/>
+            <RowDefinition Height="30"/>
+        </Grid.RowDefinitions>
+        <StackPanel Grid.Row="0">
+            <Label Content="Начальная остановка:"/>
+            <TextBox/>
+            <Label Content="Конечная остановка:"/>
+            <TextBox/>
+            <Label Content="Время выезда:"/>
+            <TextBox/>
+            <Label Content="Результат:" FontSize="14" FontWeight="Bold"/>
+            <Label Content="Самый быстрый путь:"/>
+            <TextBox/>
+            <Label Content="Самый дешевый путь:"/>
+            <TextBox/>
+        </StackPanel>
+        <WrapPanel Grid.Row="1">
+            <Button Name="SearchBtn" Content="Найти" Width="50"/>
+            <Button Name="ClearBtn" Content="Очистить" Width="70"/>
+            <Button Name="LoadBtn" Content="Загрузить данные" Width="120"/>
+            <Button Name="ExitBtn" Content="Выход"/>
+        </WrapPanel>
+    </Grid>
+</Window>
