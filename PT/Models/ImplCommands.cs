@@ -21,7 +21,12 @@ namespace PT.Models {
         }
 
         public bool CanExecute(object parameter) {
-            return _canExecute(parameter);
+            if (_canExecute == null) {
+                return true;
+            }
+            else {
+                return false;
+            }
         }
 
         public void Execute(object parameter) {
