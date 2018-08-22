@@ -35,9 +35,9 @@
             <TextBox/>
         </StackPanel>
         <WrapPanel Grid.Row="1">
-            <Button Name="SearchBtn" Content="Найти" Width="50"/>
-            <Button Name="ClearBtn" Content="Очистить" Width="70"/>
-            <Button Name="LoadBtn" Content="Загрузить данные" Width="120"/>
+            <Button Content="Найти" Width="50"/>
+            <Button Content="Очистить" Width="70"/>
+            <Button Content="Загрузить данные" Width="120" Command="{Binding Path=CommLoadFile}"/>
             <Button Name="ExitBtn" Content="Выход"/>
         </WrapPanel>
     </Grid>
