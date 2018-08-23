@@ -23,9 +23,9 @@
         </Grid.RowDefinitions>
         <StackPanel Grid.Row="0">
             <Label Content="Начальная остановка:"/>
-            <TextBox/>
+            <TextBox Text="{Binding Path=StartPoint,Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"/>
             <Label Content="Конечная остановка:"/>
-            <TextBox/>
+            <TextBox Text="{Binding Path=EndPoint, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"/>
             <Label Content="Время выезда:"/>
             <TextBox/>
             <Label Content="Результат:" FontSize="14" FontWeight="Bold"/>
@@ -35,7 +35,7 @@
             <TextBox/>
         </StackPanel>
         <WrapPanel Grid.Row="1">
-            <Button Content="Найти" Width="50"/>
+            <Button Content="Найти" Width="50" Command="{Binding Path=CommFindPaths}"/>
             <Button Content="Очистить" Width="70"/>
             <Button Content="Загрузить данные" Width="120" Command="{Binding Path=CommLoadFile}"/>
             <Button Name="ExitBtn" Content="Выход"/>
