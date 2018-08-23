@@ -25,7 +25,7 @@ namespace PT.Models {
                 return true;
             }
             else {
-                return false;
+                return _canExecute(parameter);
             }
         }
 
