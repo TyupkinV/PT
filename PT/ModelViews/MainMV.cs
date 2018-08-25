@@ -12,9 +12,9 @@ namespace PT.ModelViews {
         public LoadDataM LoadDataMProp { get; private set; }
         public ICommand CommLoadFile { get; private set; }
         public ICommand CommFindPaths { get; private set; }
-        private string _startPoint = "1";
+        private string _startPoint = "";
         public string StartPoint { get { return _startPoint; } set {_startPoint = value; NotifyPropertyChanged(); } }
-        private string _endPoint = "4";
+        private string _endPoint = "";
         public string EndPoint { get { return _endPoint; } set { _endPoint = value; NotifyPropertyChanged(); } }
         private int _budgetPrice;
         public int BudgetPrice {
@@ -26,6 +26,24 @@ namespace PT.ModelViews {
             get { return _budgetPath; }
             set { _budgetPath = value; NotifyPropertyChanged(); }
         }
+        private int _smallestTime;
+        public int SmallestTime {
+            get { return _smallestTime; }
+            set { _smallestTime = value; NotifyPropertyChanged(); }
+        }
+        private List<string> _fastPath;
+
+        public List<string> FastPath {
+            get { return _fastPath; }
+            set { _fastPath = value; NotifyPropertyChanged(); }
+        }
+
+        private string _timeStartWay = "";
+        public string TimeStartWay {
+            get { return _timeStartWay; }
+            set { _timeStartWay = value; NotifyPropertyChanged(); }
+        }
+
 
         public MainMV() {
             LoadDataMProp = new LoadDataM(this);
@@ -35,7 +53,7 @@ namespace PT.ModelViews {
         }
 
         private bool CheckFields(object obj) {
-            if(StartPoint == string.Empty || EndPoint == string.Empty) {
+            if(StartPoint == string.Empty || EndPoint == string.Empty || TimeStartWay == string.Empty) {
                 return false;
             }
             else {
@@ -45,14 +63,23 @@ namespace PT.ModelViews {
 
         private void FindPaths(object obj) {
             LoadDataMProp.MakeGraph();
-            Thread threadLowBudgetPath = new Thread(FindBudgetPath);
-            threadLowBudgetPath.Start();
-            //Thread threadFastPath = new Thread(FindFastPath);
-            //threadFastPath.Start();
+            if (LoadDataMProp.PathFound) {
+                Thread threadLowBudgetPath = new Thread(FindBudgetPath);
+                threadLowBudgetPath.Start();
+                Thread threadFastPath = new Thread(FindFastPath);
+                threadFastPath.Start();
+            }
+            else {
+                System.Windows.MessageBox.Show("Маршрутов не найдено.");
+                return;
+            }
         }
 
         private void FindFastPath() {
-            throw new NotImplementedException();
+            DateTime startTime = DateTime.ParseExact("2000-01-01 " + TimeStartWay, "yyyy-MM-dd HH:mm", System.Globalization.CultureInfo.InvariantCulture);
+            Tuple<int, List<string>> result = LoadDataMProp.FastPath(startTime, Convert.ToInt32(StartPoint) - 1);
+            SmallestTime = result.Item1;
+            FastPath = result.Item2;
         }
 
         private void FindBudgetPath() {
@@ -60,8 +87,6 @@ namespace PT.ModelViews {
             BudgetPrice = result.Item1;
             BudgetPath = result.Item2; 
         }
-
-
 
         public event PropertyChangedEventHandler PropertyChanged;
 

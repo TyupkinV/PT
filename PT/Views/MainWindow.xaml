@@ -27,18 +27,18 @@
             <Label Content="Конечная остановка:"/>
             <TextBox Text="{Binding Path=EndPoint, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"/>
             <Label Content="Время выезда:"/>
-            <TextBox/>
+            <TextBox Text="{Binding Path=TimeStartWay, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"/>
             <Label Content="Результат:" FontSize="14" FontWeight="Bold"/>
             <Label Content="Самый быстрый путь:"/>
             <WrapPanel Height="90">
-                <Label Content="Цена:"/>
-                <TextBox Width="50" Height="20" VerticalAlignment="Top" Margin="3" IsReadOnly="True"/>
+                <Label Content="Время:"/>
+                <TextBox Width="50" Height="20" VerticalAlignment="Top" Margin="3" IsReadOnly="True" Text="{Binding Path=SmallestTime, Mode=OneWay, UpdateSourceTrigger=PropertyChanged}"/>
                 <Label Content="Маршрут:"/>
-                <ListBox Width="100" Height="75" Margin="3" ScrollViewer.HorizontalScrollBarVisibility="Auto"/>
+                <ListBox Width="100" Height="75" Margin="3" ScrollViewer.HorizontalScrollBarVisibility="Auto" ItemsSource="{Binding Path=FastPath, Mode=OneWay, UpdateSourceTrigger=PropertyChanged}"/>
             </WrapPanel>
             <Label Content="Самый дешевый путь:"/>
             <WrapPanel Height="90" Grid.Column="0">
-                <Label Content="Цена:"/>
+                <Label Content=" Цена:"/>
                 <TextBox Width="50" Height="20" VerticalAlignment="Top" Margin="3" IsReadOnly="True" Text="{Binding Path=BudgetPrice}"/>
                 <Label Content="Маршрут:"/>
                 <ListBox Width="100" Height="75" Margin="3" ScrollViewer.HorizontalScrollBarVisibility="Auto" ItemsSource="{Binding BudgetPath}"/>
@@ -46,9 +46,7 @@
         </StackPanel>
         <WrapPanel Grid.Row="1">
             <Button Content="Найти" Width="50" Command="{Binding Path=CommFindPaths}"/>
-            <Button Content="Очистить" Width="70"/>
             <Button Content="Загрузить данные" Width="120" Command="{Binding Path=CommLoadFile}"/>
-            <Button Name="ExitBtn" Content="Выход"/>
         </WrapPanel>
     </Grid>
 </Window>
