@@ -80,23 +80,25 @@ namespace PT.Models {
         }
 
         private void AllPath(List<Edge> graph, int startPoint, int arrivalPoint, List<Tuple<int, int>> path) {
-            graph[startPoint].Visited = true;
             if (startPoint == arrivalPoint) {
                 AllPaths.Add(new List<Tuple<int, int>>(path));
-                Console.WriteLine("-");
+                //Console.WriteLine("Result path: {0}", string.Join("-", path));
                 path.Clear();
                 graph[startPoint].Visited = false;
                 return;
             }
             foreach (Edge edge in graph) {
+                //Console.WriteLine("All: {0}-{1}-[{2}]", edge.StartV, edge.EndV, edge.IDBus);
                 if (edge.StartV == startPoint && !edge.Visited && edge.EndV != StartPointProp) {
                     path.Add(new Tuple<int, int>(edge.IDBus, edge.EndV));
-                    Console.WriteLine("{0}-{1}", startPoint, edge.EndV);
+                    //Console.WriteLine("Select: {0}-{1}-[{2}]", startPoint, edge.EndV, edge.IDBus);
                     AllPath(graph, edge.EndV, arrivalPoint, new List<Tuple<int, int>>(path));
                     path.RemoveAt(path.Count - 1);
+                    //Console.WriteLine("Return to: {0}", string.Join("-", path));
                 }
             }
         }
+
         private void BudgetPath() {
             int b = 0;
         }
