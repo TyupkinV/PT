@@ -4,6 +4,7 @@ using System.Linq;
 using System.IO;
 using Microsoft.Win32;
 using System.Windows;
+using System.Threading;
 
 
 namespace PT.Models {
@@ -13,6 +14,7 @@ namespace PT.Models {
         public List<Bus> AllBus { get; set; } = new List<Bus>();
         public List<List<Tuple<int, int>>> AllPaths { get; set; } = new List<List<Tuple<int, int>>>();
         public int StartPointProp { get; set; }
+
 
         public LoadDataM(ModelViews.MainMV mainMV) {
             MainMVP = mainMV;
@@ -99,8 +101,30 @@ namespace PT.Models {
             }
         }
 
-        private void BudgetPath() {
-            int b = 0;
+        public Tuple<int, List<string>> BudgetPath() {
+            int poorPath = int.MaxValue;
+            List<Tuple<int, int>> resultPath = new List<Tuple<int, int>>(); 
+            foreach(List<Tuple<int, int>> path in AllPaths) {
+                int sum = 0;
+                var allBusPath = path.Select(x => x.Item1).GroupBy(x => x);
+                foreach (var bus in allBusPath) {
+                    sum += AllBus[bus.Key - 1].Price;
+                }
+                if (sum < poorPath) {
+                    poorPath = sum;
+                    resultPath = path;
+                }
+            }
+            return new Tuple<int, List<string>>(poorPath, ConvertPath(resultPath));
+        }
+
+        private List<string> ConvertPath(List<Tuple<int, int>> path) {
+            var sharedPath = path.GroupBy(x => x.Item1);
+            List<string> resultConvert = new List<string>();
+            foreach(var bus in sharedPath) {
+                resultConvert.Add("№" +Convert.ToString(bus.Key) + ": " + string.Join("-", bus.Select(x => x.Item2)));
+            }
+            return resultConvert;
         }
     }
 }

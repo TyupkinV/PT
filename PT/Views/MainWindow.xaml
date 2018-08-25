@@ -5,7 +5,7 @@
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
         xmlns:local="clr-namespace:PT"
         mc:Ignorable="d"
-        Title="Поиск путей" Height="320" Width="400">
+        Title="Поиск путей" Height="450" Width="400">
     <Window.Resources>
             <Style TargetType="Button">
                 <Setter Property="Width" Value="100"/>
@@ -30,9 +30,19 @@
             <TextBox/>
             <Label Content="Результат:" FontSize="14" FontWeight="Bold"/>
             <Label Content="Самый быстрый путь:"/>
-            <TextBox/>
+            <WrapPanel Height="90">
+                <Label Content="Цена:"/>
+                <TextBox Width="50" Height="20" VerticalAlignment="Top" Margin="3" IsReadOnly="True"/>
+                <Label Content="Маршрут:"/>
+                <ListBox Width="100" Height="75" Margin="3" ScrollViewer.HorizontalScrollBarVisibility="Auto"/>
+            </WrapPanel>
             <Label Content="Самый дешевый путь:"/>
-            <TextBox/>
+            <WrapPanel Height="90" Grid.Column="0">
+                <Label Content="Цена:"/>
+                <TextBox Width="50" Height="20" VerticalAlignment="Top" Margin="3" IsReadOnly="True" Text="{Binding Path=BudgetPrice}"/>
+                <Label Content="Маршрут:"/>
+                <ListBox Width="100" Height="75" Margin="3" ScrollViewer.HorizontalScrollBarVisibility="Auto" ItemsSource="{Binding BudgetPath}"/>
+            </WrapPanel>
         </StackPanel>
         <WrapPanel Grid.Row="1">
             <Button Content="Найти" Width="50" Command="{Binding Path=CommFindPaths}"/>
