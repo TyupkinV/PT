@@ -9,7 +9,7 @@ namespace PT.Models {
     public class LoadDataM {
         #region complete
         public ModelViews.MainMV MainMVP { get; set; }
-        public List<Bus> AllBus { get; set; } = new List<Bus>();
+        public List<Bus> AllBus { get; set; }
         public List<List<Tuple<int, int>>> AllPaths { get; set; } = new List<List<Tuple<int, int>>>();
         public int StartPointProp { get; set; }
         public bool PathFound { get; set; }
@@ -20,7 +20,9 @@ namespace PT.Models {
         }
         // Преобразование маршрута для вывода
         private List<string> ConvertPath(List<Tuple<int, int>> path) {
-            var sharedPath = path.GroupBy(x => x.Item1);
+            List<Tuple<int, int>> temp = new List<Tuple<int, int>>(path);
+            temp.Insert(0, new Tuple<int, int>(temp[0].Item1, StartPointProp));
+            var sharedPath = temp.GroupBy(x => x.Item1);
             List<string> resultConvert = new List<string>();
             foreach (var bus in sharedPath) {
                 resultConvert.Add("№" + Convert.ToString(bus.Key) + ": " + string.Join("-", bus.Select(x => x.Item2 + 1)));
@@ -37,7 +39,7 @@ namespace PT.Models {
             if (openFileOFD.ShowDialog() == true) {
                 StreamReader reader = new StreamReader(openFileOFD.OpenFile());
                 int sumBus = Convert.ToInt32(reader.ReadLine());
-                
+                AllBus = new List<Bus>();
                 while (AllBus.Count < sumBus) {
                     AllBus.Add(new Bus());
                 }
@@ -60,9 +62,11 @@ namespace PT.Models {
                 foreach(Bus bus in AllBus) {
                     string[] line = reader.ReadLine().Split(' ');
                     int iter = Convert.ToInt32(line[0]);
-                    List<Tuple<int, int>> tempWaybill = new List<Tuple<int, int>>();
-                    for(int i = 1; i <= iter; i++) {
-                        tempWaybill.Add(new Tuple<int, int>(Convert.ToInt32(line[i]) - 1, Convert.ToInt32(line[i + iter])));
+                    List<Tuple<int, int>> tempWaybill = new List<Tuple<int, int>> {
+                        new Tuple<int, int>(Convert.ToInt32(line[1]) - 1, Convert.ToInt32(line[iter + iter]))
+                    };
+                    for(int i = 2; i <= iter; i++) {
+                        tempWaybill.Add(new Tuple<int, int>(Convert.ToInt32(line[i]) - 1, Convert.ToInt32(line[i + iter - 1])));
                     }
                     bus.Waybill = tempWaybill;
                 }
@@ -72,16 +76,19 @@ namespace PT.Models {
         public void MakeGraph() {
             List<Edge> listAdj = new List<Edge>();
             PathFound = false;
+            int counter = 0;
                 foreach(Bus bus in AllBus) {
                     List<int> allPoint = bus.Waybill.Select(x => x.Item1).ToList();
-                    listAdj.Add(new Edge { StartV = allPoint[allPoint.Count - 1], EndV = allPoint[0], IDBus = bus.IDBus });
+                    listAdj.Add(new Edge { StartV = allPoint[allPoint.Count - 1], EndV = allPoint[0], IDBus = bus.IDBus, IDEdge = counter });
+                    counter++;
                     for(int i = 0; i < allPoint.Count - 1; i++) {
-                        listAdj.Add(new Edge { StartV = allPoint[i], EndV = allPoint[i + 1], IDBus = bus.IDBus, Visited = false });
+                        listAdj.Add(new Edge { StartV = allPoint[i], EndV = allPoint[i + 1], IDBus = bus.IDBus, IDEdge = counter});
+                        counter++;
                     }
                 }
 
             StartPointProp = Convert.ToInt32(MainMVP.StartPoint) - 1;
-            AllPath(listAdj, StartPointProp, Convert.ToInt32(MainMVP.EndPoint) - 1, new List<Tuple<int, int>>());
+            AllPath(listAdj, StartPointProp, Convert.ToInt32(MainMVP.EndPoint) - 1, new List<Tuple<int, int>>(), Enumerable.Repeat(false, listAdj.Count).ToList());
             if(AllPaths.Count != 0) {
                 BudgetPath();
             }
@@ -91,26 +98,28 @@ namespace PT.Models {
             
         }
         // Поиск всех путей
-        private void AllPath(List<Edge> graph, int startPoint, int arrivalPoint, List<Tuple<int, int>> path) {
+        private void AllPath(List<Edge> graph, int startPoint, int arrivalPoint, List<Tuple<int, int>> path, List<bool> visited) {
             if (startPoint == arrivalPoint) {
                 AllPaths.Add(new List<Tuple<int, int>>(path));
                 PathFound = true;
                 //Console.WriteLine("Result path: {0}", string.Join("-", path));
                 path.Clear();
-                graph[startPoint].Visited = false;
                 return;
             }
             foreach (Edge edge in graph) {
                 //Console.WriteLine("All: {0}-{1}-[{2}]", edge.StartV, edge.EndV, edge.IDBus);
-                if (edge.StartV == startPoint && !edge.Visited && edge.EndV != StartPointProp) {
+                List<Tuple<int, int>> test = new List<Tuple<int, int>>(path);
+                if (edge.StartV == startPoint && !visited[edge.IDEdge] && path.Select(x => x).Where(x => x.Item2 == edge.EndV).Count() == 0 && edge.EndV != StartPointProp) {
+                    visited[edge.IDEdge] = true;
                     path.Add(new Tuple<int, int>(edge.IDBus, edge.EndV));
                     //Console.WriteLine("Select: {0}-{1}-[{2}]", startPoint, edge.EndV, edge.IDBus);
-                    AllPath(graph, edge.EndV, arrivalPoint, new List<Tuple<int, int>>(path));
+                    AllPath(graph, edge.EndV, arrivalPoint, new List<Tuple<int, int>>(path), new List<bool>(visited));
                     path.RemoveAt(path.Count - 1);
                     //Console.WriteLine("Return to: {0}", string.Join("-", path));
                 }
             }
         }
+  
         // Поиск бюджетного пути
         public Tuple<int, List<string>> BudgetPath() {
             int poorPath = int.MaxValue;
@@ -148,13 +157,15 @@ namespace PT.Models {
                         break;
                     }
                     if(path[i].Item1 - 1 == LastBus) {
-                        timeStart = timeStart.AddMinutes(AllBus[LastBus].Waybill[path[i].Item1 - 1].Item2);
-                        time += AllBus[LastBus].Waybill[path[i].Item1].Item2;
+                        int temp1 = AllBus[LastBus].Waybill.Find(x => x.Item1 == path[i].Item2).Item2;
+                        timeStart = timeStart.AddMinutes(temp1);
+                        time += temp1;
                     }
                     else {
-                        timeWait = AllBus[path[i].Item1 - 1].WaitTime(timeStart, path[i - 1].Item2);
+                        LastBus = path[i].Item1 - 1;
+                        timeWait = AllBus[LastBus].WaitTime(timeStart, path[i - 1].Item2);
                         time += timeWait;
-                        int temp = AllBus[path[i].Item1 - 1].Waybill[path[i - 1].Item1 - 1].Item2;
+                        int temp = AllBus[LastBus].Waybill.Find(x => x.Item1 == path[i].Item2).Item2;
                         time += temp;
                         timeStart = timeStart.AddMinutes(timeWait + temp);
 
@@ -173,7 +184,6 @@ namespace PT.Models {
             }
             return new Tuple<int, List<string>>(minTime, ConvertPath(resultPath));
         }
-
     }
 }
 
@@ -251,10 +261,10 @@ public class Bus {
             List<int> allPoint = Waybill.Select(x => x.Item1).ToList();
             int lenWay = allPoint.Count;
             while (true) {
-                DateTime temp = busTime.AddMinutes(Waybill[count % lenWay].Item2);
+                DateTime temp = busTime.AddMinutes(Waybill[(count + 1) % lenWay].Item2);
                 if (temp.CompareTo(currTime) > 0) {
                     TimeToNextStay = (temp - currTime).Minutes;
-                    NextStay = allPoint[(count - 1) % lenWay];
+                    NextStay = allPoint[count % lenWay];
                     break;
                 }
                 else if(temp.CompareTo(currTime) == 0) {
@@ -286,7 +296,7 @@ class Edge {
     public int StartV { get; set; }
     public int EndV { get; set; }
     public int IDBus { get; set; }
-    public bool Visited { get; set; }
+    public int IDEdge { get; set; }
 }
 
 
