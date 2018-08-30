@@ -53,7 +53,7 @@ namespace PT.ModelViews {
         }
 
         private bool CheckFields(object obj) {
-            if(StartPoint == string.Empty || EndPoint == string.Empty || TimeStartWay == string.Empty) {
+            if(StartPoint == string.Empty || EndPoint == string.Empty || TimeStartWay == string.Empty || LoadDataMProp.AllBus == null) {
                 return false;
             }
             else {
@@ -74,6 +74,7 @@ namespace PT.ModelViews {
                 return;
             }
         }
+
 
         private void FindFastPath() {
             DateTime startTime = DateTime.ParseExact("2000-01-01 " + TimeStartWay, "yyyy-MM-dd HH:mm", System.Globalization.CultureInfo.InvariantCulture);
