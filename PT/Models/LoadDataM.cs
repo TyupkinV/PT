@@ -25,7 +25,7 @@ namespace PT.Models {
             var sharedPath = temp.GroupBy(x => x.Item1);
             List<string> resultConvert = new List<string>();
             foreach (var bus in sharedPath) {
-                resultConvert.Add("№" + Convert.ToString(bus.Key) + ": " + string.Join("-", bus.Select(x => x.Item2 + 1)));
+                resultConvert.Add("№" + Convert.ToString(bus.Key + 1) + ": " + string.Join("-", bus.Select(x => x.Item2 + 1)));
             }
             return resultConvert;
         }
@@ -39,6 +39,7 @@ namespace PT.Models {
             if (openFileOFD.ShowDialog() == true) {
                 StreamReader reader = new StreamReader(openFileOFD.OpenFile());
                 int sumBus = Convert.ToInt32(reader.ReadLine());
+                Bus.CounterBus = 0;
                 AllBus = new List<Bus>();
                 while (AllBus.Count < sumBus) {
                     AllBus.Add(new Bus());
@@ -72,6 +73,8 @@ namespace PT.Models {
                 }
             } 
         }
+
+
         // Преобразование данных файла в графовую модель.
         public void MakeGraph() {
             List<Edge> listAdj = new List<Edge>();
@@ -88,34 +91,23 @@ namespace PT.Models {
                 }
 
             StartPointProp = Convert.ToInt32(MainMVP.StartPoint) - 1;
-            AllPath(listAdj, StartPointProp, Convert.ToInt32(MainMVP.EndPoint) - 1, new List<Tuple<int, int>>(), Enumerable.Repeat(false, listAdj.Count).ToList());
-            if(AllPaths.Count != 0) {
-                BudgetPath();
-            }
-            else {
-                MessageBox.Show("Маршрутов не найдено.");
-            }
-            
+            AllPath(listAdj, StartPointProp, Convert.ToInt32(MainMVP.EndPoint) - 1, new List<Tuple<int, int>>(), Enumerable.Repeat(false, listAdj.Count).ToList());            
         }
         // Поиск всех путей
         private void AllPath(List<Edge> graph, int startPoint, int arrivalPoint, List<Tuple<int, int>> path, List<bool> visited) {
             if (startPoint == arrivalPoint) {
                 AllPaths.Add(new List<Tuple<int, int>>(path));
                 PathFound = true;
-                //Console.WriteLine("Result path: {0}", string.Join("-", path));
                 path.Clear();
                 return;
             }
             foreach (Edge edge in graph) {
-                //Console.WriteLine("All: {0}-{1}-[{2}]", edge.StartV, edge.EndV, edge.IDBus);
                 List<Tuple<int, int>> test = new List<Tuple<int, int>>(path);
                 if (edge.StartV == startPoint && !visited[edge.IDEdge] && path.Select(x => x).Where(x => x.Item2 == edge.EndV).Count() == 0 && edge.EndV != StartPointProp) {
                     visited[edge.IDEdge] = true;
                     path.Add(new Tuple<int, int>(edge.IDBus, edge.EndV));
-                    //Console.WriteLine("Select: {0}-{1}-[{2}]", startPoint, edge.EndV, edge.IDBus);
                     AllPath(graph, edge.EndV, arrivalPoint, new List<Tuple<int, int>>(path), new List<bool>(visited));
                     path.RemoveAt(path.Count - 1);
-                    //Console.WriteLine("Return to: {0}", string.Join("-", path));
                 }
             }
         }
@@ -128,7 +120,7 @@ namespace PT.Models {
                 int sum = 0;
                 var allBusPath = path.Select(x => x.Item1).GroupBy(x => x);
                 foreach (var bus in allBusPath) {
-                    sum += AllBus[bus.Key - 1].Price;
+                    sum += AllBus[bus.Key].Price;
                 }
                 if (sum < poorPath) {
                     poorPath = sum;
@@ -141,148 +133,141 @@ namespace PT.Models {
         #endregion
         // Поиск быстрейшего пути
         public Tuple<int, List<string>> FastPath(DateTime timePass, int startPoint) {
-            List<Tuple<int, int>> resultPath = null;
+            List<Tuple<int, int>> resultPath = new List<Tuple<int, int>>();
             int minTime = int.MaxValue;
-
+            DateTime midnightTime = new DateTime(2000, 1, 2, 0, 0, 0);
 
             foreach (List<Tuple<int, int>> path in AllPaths) {
-                DateTime timeStart = timePass;
-                int time = 0;
-                int LastBus = path[0].Item1 - 1;
-                int timeWait = AllBus[LastBus].WaitTime(timeStart, startPoint);
-                time += timeWait;
-                timeStart = timeStart.AddMinutes(timeWait);
+                List<Bus> tempAllBus = Extensions.Clone(AllBus).ToList();
+                DateTime currTime = timePass;
+                int time = tempAllBus[path[0].Item1].WaitTime(currTime, startPoint); 
+                currTime = currTime.AddMinutes(time);
+                int lastBus = path[0].Item1;
+                bool outTime = false;
+
                 for (int i = 0; i < path.Count; i++) {
-                    if (timeStart.AddMinutes(1).CompareTo(new DateTime(2000,1,2,0,0,0)) == 0) {
-                        break;
-                    }
-                    if(path[i].Item1 - 1 == LastBus) {
-                        int temp1 = AllBus[LastBus].Waybill.Find(x => x.Item1 == path[i].Item2).Item2;
-                        timeStart = timeStart.AddMinutes(temp1);
-                        time += temp1;
+                    int timeWait = 0, timeRide = 0;
+                    int indexNextPoint;
+                    if (path[i].Item1 == lastBus) {
+                        indexNextPoint = tempAllBus[lastBus].Waybill.FindIndex(x => x.Item1 == path[i].Item2);
+                        timeRide = tempAllBus[lastBus].Waybill[indexNextPoint].Item2;
                     }
                     else {
-                        LastBus = path[i].Item1 - 1;
-                        timeWait = AllBus[LastBus].WaitTime(timeStart, path[i - 1].Item2);
-                        time += timeWait;
-                        int temp = AllBus[LastBus].Waybill.Find(x => x.Item1 == path[i].Item2).Item2;
-                        time += temp;
-                        timeStart = timeStart.AddMinutes(timeWait + temp);
-
+                        lastBus = path[i].Item1;
+                        indexNextPoint = tempAllBus[lastBus].Waybill.FindIndex(x => x.Item1 == path[i].Item2);
+                        timeWait = tempAllBus[lastBus].WaitTime(currTime, path[i - 1].Item2);
+                        timeRide = tempAllBus[lastBus].Waybill[indexNextPoint].Item2;
+                    }
+                    time += (timeWait + timeRide);
+                    if (currTime.AddMinutes(timeWait + timeRide).CompareTo(midnightTime) >= 0) {
+                        outTime = true;
+                        break;
                     }
 
+                    currTime = currTime.AddMinutes(timeWait + timeRide);
                 }
-                if (time < minTime) {
+                if (outTime) {
+                    break;
+                }
+                else if (time <= minTime) {
                     resultPath = path;
                     minTime = time;
                 }
             }
-
-            if(minTime == int.MaxValue) {
-                MessageBox.Show("Машрутов до 00:00 не найдено.");
-                return new Tuple<int, List<string>>(minTime = -1, new List<string>());
+            if(resultPath.Count == 0) {
+                MessageBox.Show("Маршрутов до 00:00 не найдено.");
             }
             return new Tuple<int, List<string>>(minTime, ConvertPath(resultPath));
         }
     }
 }
 
-public class Bus {
-    #region var
+static class Extensions {
+    public static IList<T> Clone<T>(this IList<T> listToClone) where T : ICloneable {
+        return listToClone.Select(item => (T)item.Clone()).ToList();
+    }
+}
+
+public class Bus : ICloneable {
+    #region vars
     static public int CounterBus = 0;
     public int IDBus { get; set; }
     public List<Tuple<int, int>> Waybill { get; set; }
     public DateTime StartWaybill { get; set; }
     public int Price { get; set; }
     public int NextStay { get; set; } = -1;
-    public int TimeToNextStay { get; set; } = -1;
-    public DateTime LastTimeState { get; set; } = new DateTime(2000, 1, 1, 0, 0, 0);
+    public int TimeToNextStay { get; set; } = 0;
+    public DateTime LastTimeState { get; set; } = new DateTime(1, 1, 1, 0, 0, 0);
     #endregion
 
     public Bus() {
-        IDBus = ++CounterBus;
+        IDBus = CounterBus++;
     }
 
     public int WaitTime(DateTime currTime, int point) {
         UpdateState(currTime);
-        int timeWait;
-        if(NextStay == -1) {
-            timeWait = (int)(StartWaybill - currTime).TotalMinutes;
-            if(Waybill[0].Item1 == point) {
-                return timeWait;
-            }
-            else {
-                int lenWay = Waybill.Count;
-                NextStay = Waybill[0].Item1;
-                for (int i = 0; i % lenWay < lenWay; i++) {
-                    if (NextStay != point) {
-                        timeWait += Waybill[i % lenWay].Item2;
-                        NextStay = Waybill[i + 1 % lenWay].Item1;
-                    }
-                    else {
-                        break;
-                    }
-                }
-                return timeWait;
-            }
-        }
 
+        int timeWait = TimeToNextStay;
         if (NextStay == point) {
-            return TimeToNextStay;
+            return timeWait;
         }
         else {
-            timeWait = TimeToNextStay;
-            int t = Waybill.FindIndex(x => x.Item1 == point);
+            int indexNextPoint = Waybill.FindIndex(x => x.Item1 == NextStay) + 1;
             int lenWay = Waybill.Count;
-            for (int i = t; i % lenWay < lenWay; i++) {
-                if (NextStay != point) {
-                    timeWait += Waybill[i % lenWay].Item2;
-                    NextStay = Waybill[i % lenWay].Item1;
-                }
-                else {
-                    int b = 0;
-                    break;
-                }
+            while (NextStay != point) {
+                timeWait += Waybill[indexNextPoint % lenWay].Item2;
+                NextStay = Waybill[indexNextPoint % lenWay].Item1;
+                indexNextPoint++;
             }
+            LastTimeState = LastTimeState.AddMinutes(timeWait);
+            TimeToNextStay = 0;
             return timeWait;
         }
     }
 
     private void UpdateState(DateTime currTime) {
-        if (currTime.CompareTo(StartWaybill) > 0) {
-            DateTime busTime = StartWaybill;
-            int count;
-            if(NextStay == -1) {
-                count = 0;
-            }
-            else {
-                count = Waybill.FindIndex(x => x.Item1 == NextStay);
-            }
-            List<int> allPoint = Waybill.Select(x => x.Item1).ToList();
-            int lenWay = allPoint.Count;
-            while (true) {
-                DateTime temp = busTime.AddMinutes(Waybill[(count + 1) % lenWay].Item2);
-                if (temp.CompareTo(currTime) > 0) {
-                    TimeToNextStay = (temp - currTime).Minutes;
-                    NextStay = allPoint[count % lenWay];
-                    break;
-                }
-                else if(temp.CompareTo(currTime) == 0) {
-                    TimeToNextStay = 0;
-                    NextStay = allPoint[(count - 1) % lenWay];
-                    busTime = temp;
-                    break;
-                }
-                else {
-                    busTime = temp;
-                    count++;
-                }
-            }
+        if(currTime.CompareTo(StartWaybill) <= 0) {
+            NextStay = Waybill[0].Item1;
+            TimeToNextStay = (int)(StartWaybill - currTime).TotalMinutes;
+            LastTimeState = currTime;
             return;
+        }
+
+        DateTime busTime;
+        int indexNextPoint;
+        if (LastTimeState.Year != 1) {
+            busTime = LastTimeState;
+            busTime = busTime.AddMinutes(TimeToNextStay);
+            indexNextPoint = Waybill.FindIndex(x => x.Item1 == NextStay);
         }
         else {
-            return;
+            busTime = StartWaybill;
+            indexNextPoint = 0;
+            NextStay = Waybill[0].Item1;
+            TimeToNextStay = 0;
+        } 
+
+        int lenWay = Waybill.Count;
+
+        while (busTime.CompareTo(currTime) < 0) {
+            busTime = busTime.AddMinutes(Waybill[(indexNextPoint + 1) % lenWay].Item2);
+            indexNextPoint++;
         }
+        NextStay = Waybill[indexNextPoint % lenWay].Item1;
+        TimeToNextStay = (int)(busTime - currTime).TotalMinutes;
+        LastTimeState = currTime;
+    }
+
+    public object Clone() {
+        return new Bus {
+            IDBus = this.IDBus,
+            LastTimeState = this.LastTimeState,
+            Waybill = this.Waybill,
+            TimeToNextStay = this.TimeToNextStay,
+            NextStay = this.NextStay,
+            Price = this.Price,
+            StartWaybill = this.StartWaybill
+        };
     }
 }
 
